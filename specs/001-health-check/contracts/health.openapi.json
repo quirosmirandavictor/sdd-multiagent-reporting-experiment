@@ -1,0 +1,52 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Health check mínimo",
+    "version": "1.0.0",
+    "description": "Contrato estático de specs/001-health-check/spec.md. Confirma exclusivamente que se atendió la consulta; no diagnostica otros componentes."
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Consultar el health check público",
+        "description": "Sin credenciales, parámetros ni cuerpo obligatorios. Responde directamente sin redirecciones ni dependencias de negocio. Cada consulta es independiente de las anteriores. Otras rutas y métodos están fuera de este contrato.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "La consulta fue atendida.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                },
+                "example": {
+                  "status": "ok"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
