@@ -1,0 +1,8 @@
+# Only the application, locked dependencies and tests enter the build context.
+# Git, local environments, secrets, tooling and design artifacts stay outside.
+**
+!app.py
+!pyproject.toml
+!uv.lock
+!tests/
+!tests/test_health.py
