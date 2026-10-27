@@ -25,7 +25,7 @@ No hay tercer ownership ni edición concurrente de archivos. A entrega evidencia
 ## Phase 2: Foundational — bloqueo previo al paralelo
 
 - [X] T003 B: crear reporting/__init__.py vacío, sin reexports ni importaciones de escritor/parser; comprobar que no se necesita reporting/model.py o módulo de excepciones. Depende de T002.
-- [ ] T004 B con revisión de A: registrar en specs/002-yaml-excel-reports/tasks.md el commit aprobado que contiene contracts/report-v1.md, data-model.md, dependencias e inicializador; preparar dos árboles independientes desde ese commit y confirmar firmas parse_report(text: str) -> dict / build_xlsx(report: dict) -> bytes, claves/tipos y propiedad exclusiva. Depende de T003; bloquear paralelo hasta cerrar esta tarea.
+- [X] T004 B con revisión de A: registrar en specs/002-yaml-excel-reports/tasks.md el commit aprobado que contiene contracts/report-v1.md, data-model.md, dependencias e inicializador; preparar dos árboles independientes desde ese commit y confirmar firmas parse_report(text: str) -> dict / build_xlsx(report: dict) -> bytes, claves/tipos y propiedad exclusiva. Depende de T003; bloquear paralelo hasta cerrar esta tarea.
 
 **Checkpoint**: Contrato común congelado operativamente por commit registrado y revisado por ambos. Si cambia, detener consumidores, actualizar documentos y revisar antes de continuar.
 
@@ -180,12 +180,12 @@ Dentro de cada ownership las tareas que comparten archivo se realizan en serie. 
 
 ## Registro de congelación, handoffs e integración
 
-Estado al 2026-10-26: T001–T003 completadas; T004–T029 pendientes. Solo se han preparado dependencias y el inicializador vacío; parser, generador, gráfico y CLI no implementados.
+Estado al 2026-10-26: T001–T004 completadas; T005–T029 pendientes. Preparación y congelación verificadas; parser, generador, gráfico y CLI no implementados.
 
 | Registro | Estado |
 | --- | --- |
 | Aprobación humana de especificación y alcance | T001 completada el 2026-10-26; responsable del experimento |
-| Commit común congelado y árboles A/B | Pendiente T004 |
+| Commit común congelado y árboles A/B | T004 completada: SHA_PREPARADO `d4715153bb7b47288f7b8eb462c26c63343476da`; ver evidencia Git al final |
 | Handoff A: trabajo, archivos, pruebas, decisiones, bloqueantes | Pendiente T022 |
 | Pruebas separadas B e integración dict→bytes/CLI | Pendiente T022/T027 |
 | Local/Docker, salud HTTP, omisiones y fallos | Pendiente T027 |
@@ -210,3 +210,14 @@ Solo B modifica este registro y los marcadores durante ejecución, a partir de e
 - **Validaciones**: uv lock --check terminó con código 0; uv sync --locked terminó con código 0 usando UV_SYSTEM_CERTS=true; uv run --locked python -m pytest -q terminó con código 0, 4 pruebas aprobadas y 1 advertencia de deprecación existente de Starlette/HTTPX.
 - **Incidencia resuelta**: el primer uv sync --locked falló por UnknownIssuer; se repitió con certificados confiables del sistema, sin desactivar TLS. uv utilizó copia de archivos al no poder crear hardlinks entre sistemas de archivos; la instalación terminó correctamente.
 - **Límite**: T004 permanece pendiente. Contrato compartido y /health sin cambios; no se implementaron parser, generador, gráfico ni CLI; sin commit ni push.
+
+### Congelación verificada — T004
+
+- **Fecha**: 2026-10-26. Cierre autorizado por el responsable tras su comprobación personal y la verificación Git registrada aquí.
+- **SHA_PREPARADO común**: `d4715153bb7b47288f7b8eb462c26c63343476da`, confirmado con `git worktree list --porcelain` y `git -C <worktree> rev-parse HEAD`; también coincide con `dev`.
+- **A**: rama `agent/yaml`, worktree `C:/Users/TZ/orca/workspaces/sdd-multiagent-reporting-experiment/yaml-validation`.
+- **B**: rama `agent/excel`, worktree `C:/Users/TZ/orca/workspaces/sdd-multiagent-reporting-experiment/agent-excel`.
+- **Limpieza y preparación**: `git -C <worktree> status --porcelain` vacío en ambos antes del registro; T001, T002 y T003 marcadas completadas en ambos. `pyproject.toml`, `uv.lock` y el inicializador vacío están versionados en el SHA común y sin cambios locales.
+- **Contrato congelado sin modificaciones**: `git rev-parse HEAD:<ruta>` y `git hash-object <ruta>` coinciden en ambos árboles y dev. Blob de `contracts/report-v1.md`: `ed550b6dffc6182897834deefe2682ce7d380969`; de `data-model.md`: `420dd7d80d9199db0cef48e2a8521d3f2a7bfc0f`.
+- **Frontera y ownership confirmados**: A entrega `parse_report(text: str) -> dict`; B consume ese modelo mediante `build_xlsx(report: dict) -> bytes`. Claves, tipos, números y errores definidos en los dos archivos congelados; propiedad de archivos separada según la tabla de ownership. Cambios incompatibles requieren detener consumidores y revisar el contrato antes de continuar.
+- **Alcance de esta operación**: solo se actualizó este registro en `dev`; los dos worktrees de agentes no se modificaron. No se ejecutaron T005–T029, no se modificó implementación ni contrato, y no se hizo commit.
