@@ -5,7 +5,9 @@ description = "Health check mínimo para validar el recorrido SDD"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi==0.143.1",
+    "pyyaml==6.0.3",
     "uvicorn==0.54.0",
+    "xlsxwriter==3.3.0",
 ]
 
 [dependency-groups]

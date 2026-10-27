@@ -20,11 +20,11 @@ No hay tercer ownership ni edición concurrente de archivos. A entrega evidencia
 ## Phase 1: Setup
 
 - [X] T001 B: registrar la aprobación humana explícita de la especificación y del alcance de 002-yaml-excel-reports en specs/002-yaml-excel-reports/tasks.md, recibida el 2026-10-26 del responsable del experimento; ver registro de aprobación al final. La solicitud actual autoriza solo registrar la aprobación, sin iniciar implementación ni declarar congelado el contrato de T004.
-- [ ] T002 B: resolver y fijar PyYAML/XlsxWriter en pyproject.toml y uv.lock para Python 3.12, conservar uv 0.12.23 y dependencias existentes; ejecutar uv lock --check y uv sync --locked, sin nuevas dependencias de colores o lectura XLSX. Depende de T001.
+- [X] T002 B: resolver y fijar PyYAML/XlsxWriter en pyproject.toml y uv.lock para Python 3.12, conservar uv 0.12.23 y dependencias existentes; ejecutar uv lock --check y uv sync --locked, sin nuevas dependencias de colores o lectura XLSX. Depende de T001.
 
 ## Phase 2: Foundational — bloqueo previo al paralelo
 
-- [ ] T003 B: crear reporting/__init__.py vacío, sin reexports ni importaciones de escritor/parser; comprobar que no se necesita reporting/model.py o módulo de excepciones. Depende de T002.
+- [X] T003 B: crear reporting/__init__.py vacío, sin reexports ni importaciones de escritor/parser; comprobar que no se necesita reporting/model.py o módulo de excepciones. Depende de T002.
 - [ ] T004 B con revisión de A: registrar en specs/002-yaml-excel-reports/tasks.md el commit aprobado que contiene contracts/report-v1.md, data-model.md, dependencias e inicializador; preparar dos árboles independientes desde ese commit y confirmar firmas parse_report(text: str) -> dict / build_xlsx(report: dict) -> bytes, claves/tipos y propiedad exclusiva. Depende de T003; bloquear paralelo hasta cerrar esta tarea.
 
 **Checkpoint**: Contrato común congelado operativamente por commit registrado y revisado por ambos. Si cambia, detener consumidores, actualizar documentos y revisar antes de continuar.
@@ -180,7 +180,7 @@ Dentro de cada ownership las tareas que comparten archivo se realizan en serie. 
 
 ## Registro de congelación, handoffs e integración
 
-Estado al 2026-10-26: T001 completada como registro documental de aprobación humana; T002–T029 pendientes. No se ha iniciado implementación ni existe evidencia de implementación.
+Estado al 2026-10-26: T001–T003 completadas; T004–T029 pendientes. Solo se han preparado dependencias y el inicializador vacío; parser, generador, gráfico y CLI no implementados.
 
 | Registro | Estado |
 | --- | --- |
@@ -201,3 +201,12 @@ Estado al 2026-10-26: T001 completada como registro documental de aprobación hu
 - **Restricción de esta solicitud**: Registrar la aprobación sin iniciar implementación ni modificar la Constitution v1.0.0. No se presenta como validación del software ni como congelación operativa del contrato: T004 permanece pendiente. Se conservan contrato y ownership A/B existentes.
 
 Solo B modifica este registro y los marcadores durante ejecución, a partir de evidencia de ambos; no crea documentación adicional de validación.
+
+### Preparación verificada — T002 y T003
+
+- **Fecha**: 2026-10-26. Ejecución expresamente limitada por el responsable a T002 y T003.
+- **Dependencias**: PyYAML 6.0.3 y XlsxWriter 3.3.0 fijadas en pyproject.toml y uv.lock; uv 0.12.23. Se conservan dependencias y pruebas de /health.
+- **Estructura**: reporting/__init__.py vacío, sin importaciones ni reexports; no se requiere model.py ni módulo de excepciones para el contrato dict/bytes.
+- **Validaciones**: uv lock --check terminó con código 0; uv sync --locked terminó con código 0 usando UV_SYSTEM_CERTS=true; uv run --locked python -m pytest -q terminó con código 0, 4 pruebas aprobadas y 1 advertencia de deprecación existente de Starlette/HTTPX.
+- **Incidencia resuelta**: el primer uv sync --locked falló por UnknownIssuer; se repitió con certificados confiables del sistema, sin desactivar TLS. uv utilizó copia de archivos al no poder crear hardlinks entre sistemas de archivos; la instalación terminó correctamente.
+- **Límite**: T004 permanece pendiente. Contrato compartido y /health sin cambios; no se implementaron parser, generador, gráfico ni CLI; sin commit ni push.
