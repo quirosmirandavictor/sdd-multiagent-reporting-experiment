@@ -1,5 +1,174 @@
 # sdd-multiagent-reporting-experiment
 
+## Feature 002: reportes locales — entrega B
+
+El generador XLSX, paleta, gráfico y CLI están implementados. **El parser A
+(`reporting/yaml_input.py`) aún no está integrado en este árbol.** Los comandos
+de generación YAML siguientes se podrán ejecutar al integrar A; por ahora no
+se declara validado el flujo E2E. No se incluye un parser sustituto.
+El contrato está en [report-v1.md](specs/002-yaml-excel-reports/contracts/report-v1.md).
+Las secciones históricas posteriores describen el incremento 001.
+
+### Windows: instalación desde cero
+
+Usar PowerShell, Git, Python 3.12 y uv 0.12.23. Excel es necesario solo para
+la revisión visual. Para contenedores, instalar Docker Desktop y activar su
+motor Linux. Ejecutar desde la raíz de este repositorio/clon.
+
+```powershell
+winget install --exact --id Python.Python.3.12
+winget install --exact --id astral-sh.uv --version 0.12.23
+# Abrir una consola nueva si cambió PATH.
+uv --version
+uv lock --check
+uv sync --locked --python 3.12
+uv run --locked --no-sync python -m reporting --help
+uv run --locked --no-sync python -m pytest -q
+```
+
+No es necesario activar .venv. No ejecutar `uv lock` para instalar.
+Las dependencias aprobadas ya están fijadas; no se requieren bibliotecas de
+lectura Excel ni dependencias adicionales.
+
+### Generar el ejemplo después de integrar A
+
+```powershell
+New-Item -ItemType Directory -Force output | Out-Null
+uv run --locked --no-sync python -m reporting --input examples/report.yaml --output output/report.xlsx
+Resolve-Path output/report.xlsx
+Invoke-Item output/report.xlsx
+```
+
+La salida será `<raíz del repositorio>\output\report.xlsx`; la CLI imprime su
+ruta absoluta. El archivo debe ser nuevo: elegir otro nombre para repetir.
+El libro tiene una hoja `Reporte`, título A1, tabla `Datos` desde A3 y dos
+filas con Norte/120 y Sur/90. El gráfico vertical toma sus datos de las celdas,
+debajo de la tabla. Título Navy, encabezados Azure con texto blanco, filas
+blancas/azul claro y barras Azure; el violeta se reserva sin aplicarlo.
+
+Para comprobar B mientras falta A, este comando usa exclusivamente el dict
+normalizado contractual, sin procesar YAML:
+
+```powershell
+New-Item -ItemType Directory -Force output | Out-Null
+@'
+from pathlib import Path
+from reporting.xlsx_output import build_xlsx
+report = {
+    'schema_version': 1, 'title': 'Ventas por región',
+    'headers': ['Región', 'Ventas'],
+    'rows': [['Norte', 120], ['Sur', 90]],
+    'chart': {'type': 'column', 'category_column': 0, 'value_columns': [1]},
+}
+target = Path('output/report-b.xlsx')
+with target.open('xb') as stream:
+    stream.write(build_xlsx(report))
+print(target.resolve())
+'@ | uv run --locked --no-sync python -
+Invoke-Item output/report-b.xlsx
+```
+
+Se generó realmente `output/report-b.xlsx` en este árbol. La presentación en
+Excel sigue pendiente: revisar legibilidad, colores, ausencia de reparación y
+solapamientos, y cambiar un número de la tabla para comprobar el gráfico.
+
+### Docker reproducible
+
+Estos comandos requieren Docker Desktop iniciado y el parser A integrado para
+la generación. El build descarga las imágenes fijadas por digest y dependencias;
+la ejecución preparada funciona sin red ni instalaciones.
+
+```powershell
+docker build --target test -t sdd-reports:test .
+docker run --rm --network none sdd-reports:test
+docker build --target runtime -t sdd-reports:runtime .
+New-Item -ItemType Directory -Force output | Out-Null
+$reportOutput = (Resolve-Path output).Path
+$reportInput = (Resolve-Path examples/report.yaml).Path
+docker run --rm --network none --mount "type=bind,source=$reportInput,target=/input.yaml,readonly" --mount "type=bind,source=$reportOutput,target=/output" sdd-reports:runtime uv run --locked --no-sync --no-dev python -m reporting --input /input.yaml --output /output/report-docker.xlsx
+Invoke-Item output/report-docker.xlsx
+```
+
+El XLSX se recupera directamente en `output/report-docker.xlsx` mediante el
+montaje. El usuario del contenedor es UID/GID 10001 y debe poder escribir en
+esa carpeta. En Linux preparar una carpeta propiedad de 10001:10001 o conceder
+permisos mediante ACL; no montar .venv. La entrada se monta en solo lectura.
+Alternativa sin montaje de salida, conservando el contenedor hasta copiar:
+
+```powershell
+docker run --name sdd-report-export --network none sdd-reports:runtime uv run --locked --no-sync --no-dev python -m reporting --input examples/report.yaml --output /tmp/report.xlsx
+docker cp sdd-report-export:/tmp/report.xlsx ./output/report-export.xlsx
+docker rm sdd-report-export
+```
+
+### Verificar GET /health
+
+El CMD por defecto conserva el servicio existente. En una consola:
+
+```powershell
+uv run --locked --no-sync python -m uvicorn app:app --host 127.0.0.1 --port 8000
+# Alternativa Docker:
+# docker run --rm --name sdd-report-health -p 127.0.0.1:8000:8000 sdd-reports:runtime
+```
+
+En otra consola:
+
+```powershell
+1..3 | ForEach-Object { curl.exe --silent --show-error --fail-with-body --max-time 10 --include http://127.0.0.1:8000/health }
+```
+
+Cada consulta debe devolver HTTP 200 y `{"status":"ok"}`. Detener el servidor
+local con Ctrl+C o el contenedor con `docker stop sdd-report-health`.
+
+### Evidencia de B y pendientes
+
+- `uv lock --check`: correcto; `uv sync --locked --python 3.12`: correcto.
+- `uv run --locked --no-sync python -m pytest -q`: 26 aprobadas, 1 módulo
+  omitido por ausencia del parser A y una advertencia existente de Starlette.
+- Inspección ZIP/XML: datos, tipos, no mutación, posiciones, tabla, colores,
+  alternancia, bordes, gráfico vertical, series y referencias. Seguridad:
+  cadenas literales, cero fórmulas de celdas y cero hipervínculos automáticos.
+- CLI: ayuda/argumentos, composición con sustitutos solo en tests, UTF-8,
+  validación, destino existente, permisos simulados, generación y escritura
+  fallidas, limpieza de archivo parcial. El sustituto no valida YAML.
+- Generación real con dict normalizado: `output/report-b.xlsx`.
+- Salud: cuatro pruebas existentes aprobadas y tres consultas HTTP reales
+  locales con HTTP 200 y objeto exacto. No se modificó `app.py`.
+- Reintentos: uv falló inicialmente por acceso a caché; lock, sync y pytest
+  pasaron con ejecución autorizada fuera del sandbox. El primer comando de
+  sondeo HTTP falló por comillas de PowerShell, sin iniciar el servidor;
+  se corrigió usando un script por entrada estándar y las tres consultas pasaron.
+- Docker: `docker version` y el build runtime fallaron por daemon Linux
+  ausente, incluso al reintentar fuera del sandbox. No se ejecutaron imagen,
+  suite Docker, exportación Docker ni salud HTTP en contenedor.
+- Pendientes: handoff A, E2E YAML/CLI real, suite integrada completa,
+  Docker y revisión humana en Excel. Los tests reales de integración se
+  habilitan automáticamente cuando exista el módulo A.
+
+No se editaron SDD/contrato, pyproject.toml, uv.lock ni archivos de A; no hubo
+commit, merge ni push. Las tareas B cubiertas son T006, T008–T012, T016,
+T018–T020; documentación y preparación Docker están implementadas con
+validación integrada pendiente. La regresión local de T023 está comprobada.
+
+### Errores comunes
+
+- `No module named reporting.yaml_input`: falta integrar A; no es un fallo
+  de instalación de PyYAML. Usar solo las pruebas B/dict hasta el handoff.
+- Destino existente: usar otro nombre `.xlsx`; nunca se sobrescribe.
+- Padre inexistente o permisos: crear previamente la carpeta, cerrar archivos
+  bloqueados en Excel y comprobar permisos del usuario/UID del contenedor.
+- Error de validación (código 2): revisar UTF-8 y el campo/fila indicado según
+  el contrato; no se genera salida. Errores de archivos/generación usan código 1.
+- Caché uv denegada: ejecutar desde una cuenta con acceso a su caché o fijar
+  `UV_CACHE_DIR` a una carpeta propia. En esta sesión el sandbox exigió acceso
+  autorizado para usar la caché existente y ejecutar las comprobaciones.
+- TLS de uv: si el emisor es de confianza en Windows, probar
+  `uv --system-certs sync --locked --python 3.12`.
+- Docker no conecta al named pipe: iniciar Docker Desktop con motor Linux
+  y comprobar `docker version` antes de repetir el build.
+- Puerto ocupado: usar otro puerto en uvicorn o en el lado host de `-p`.
+
+
 ### Desarrollo guiado por especificaciones · ORCA AI · 2 agentes Codex · Human in the loop
 
 ![Enfoque: SDD](https://img.shields.io/badge/Enfoque-Spec--Driven_Development-2563EB?style=for-the-badge)

@@ -20,6 +20,8 @@ RUN uv sync --locked --no-dev \
     && useradd --uid 10001 --gid 10001 --create-home appuser
 
 COPY app.py ./
+COPY reporting/ ./reporting/
+COPY examples/ ./examples/
 
 USER 10001:10001
 
