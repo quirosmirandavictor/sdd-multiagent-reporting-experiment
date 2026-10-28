@@ -1,0 +1,10 @@
+schema_version: 1
+title: "Ventas por región"
+headers: ["Región", "Ventas"]
+rows:
+  - ["Norte", 120]
+  - ["Sur", 90]
+chart:
+  type: column
+  category: "Región"
+  values: ["Ventas"]

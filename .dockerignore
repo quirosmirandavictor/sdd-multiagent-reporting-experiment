@@ -6,3 +6,8 @@
 !uv.lock
 !tests/
 !tests/test_health.py
+!tests/test_*.py
+!reporting/
+!reporting/*.py
+!examples/
+!examples/report.yaml
